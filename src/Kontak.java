@@ -6,6 +6,7 @@
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  *
@@ -19,10 +20,7 @@ public class Kontak {
     String kategori;
 
     public Kontak(String nomor, String nama, String kategori) {
-        this.id = null;
-        this.nomor = nomor;
-        this.nama = nama;
-        this.kategori = kategori;
+        this(null, nomor, nama, kategori);
     }
 
     public Kontak(Integer id, String nomor, String nama, String kategori) {
@@ -100,11 +98,20 @@ public class Kontak {
     }
 
     public static List<Kontak> getAll(Connection conn) {
+        return Kontak.getAll(conn, Optional.empty());
+    }
+
+    public static List<Kontak> getAll(Connection conn, Optional<String> filter) {
         Kontak.createTable(conn);
 
         List<Kontak> data = new ArrayList<>();
         try (var stmt = conn.createStatement()) {
-            var rs = stmt.executeQuery("SELECT * FROM kontak");
+            var query = "SELECT * FROM kontak";
+            if (filter.isPresent()) {
+                query += " WHERE " + filter.get();
+            }
+            
+            var rs = stmt.executeQuery(query);
 
             while (rs.next()) {
                 data.add(new Kontak(

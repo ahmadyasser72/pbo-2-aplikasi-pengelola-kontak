@@ -3,11 +3,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 
+import java.awt.event.KeyEvent;
+import java.io.FileWriter;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -27,6 +32,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
 
         this.setLocationRelativeTo(null);
         this.conn = SQLiteDatabase.connect();
+        this.reloadData();
         this.reloadTable();
     }
 
@@ -63,6 +69,11 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         jPanel5 = new javax.swing.JPanel();
         jTextFieldCari = new javax.swing.JTextField();
         jButtonCari = new javax.swing.JButton();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenu1 = new javax.swing.JMenu();
+        jMenuItemEkspor = new javax.swing.JMenuItem();
+        jMenuItemImpor = new javax.swing.JMenuItem();
+        jMenu2 = new javax.swing.JMenu();
 
         jListKontak.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
 
@@ -93,6 +104,17 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
         jPanel7.add(jLabel4, gridBagConstraints);
+
+        jTextFieldNomor.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTextFieldNomorFocusLost(evt);
+            }
+        });
+        jTextFieldNomor.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                jTextFieldNomorKeyTyped(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
@@ -229,6 +251,11 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         jPanel5.add(jTextFieldCari);
 
         jButtonCari.setText("Cari");
+        jButtonCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonCariActionPerformed(evt);
+            }
+        });
         jPanel5.add(jButtonCari);
 
         jPanel6.add(jPanel5);
@@ -236,6 +263,31 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         jPanel1.add(jPanel6, java.awt.BorderLayout.SOUTH);
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
+
+        jMenu1.setText("File");
+
+        jMenuItemEkspor.setText("Ekspor data (CSV)");
+        jMenuItemEkspor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemEksporActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItemEkspor);
+
+        jMenuItemImpor.setText("Impor data (CSV)");
+        jMenuItemImpor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemImporActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItemImpor);
+
+        jMenuBar1.add(jMenu1);
+
+        jMenu2.setText("Keluar");
+        jMenuBar1.add(jMenu2);
+
+        setJMenuBar(jMenuBar1);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -254,7 +306,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
             kontak.insert(conn);
         }
 
-        this.afterButtonClick();
+        this.reset();
     }//GEN-LAST:event_jButtonTambahActionPerformed
 
     private void jButtonHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonHapusActionPerformed
@@ -264,7 +316,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         }
 
         kontakOptional.get().delete(conn);
-        this.afterButtonClick();
+        this.reset();
     }//GEN-LAST:event_jButtonHapusActionPerformed
 
     private void jButtonEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEditActionPerformed
@@ -274,7 +326,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         }
 
         kontakOptional.get().update(conn);
-        this.afterButtonClick();
+        this.reset();
     }//GEN-LAST:event_jButtonEditActionPerformed
 
     private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
@@ -292,7 +344,6 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         jButtonTambah.setEnabled(false);
         jButtonEdit.setEnabled(true);
         jButtonHapus.setEnabled(true);
-
     }//GEN-LAST:event_jTable1MouseClicked
 
     private void jComboBoxFilterKategoriItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jComboBoxFilterKategoriItemStateChanged
@@ -300,14 +351,125 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBoxFilterKategoriItemStateChanged
 
     private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
-        this.afterButtonClick();
+        this.reset();
     }//GEN-LAST:event_jButtonResetActionPerformed
 
-    void afterButtonClick() {
+    private void jButtonCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCariActionPerformed
+        var search = jTextFieldCari.getText();
+        if (search.isBlank()) {
+            return;
+        }
+
+        this.reloadData();
+        this.daftarKontak = this.daftarKontak
+                .stream()
+                .filter(
+                        kontak -> kontak.nomor.contains(search)
+                        || kontak.nama.contains(search)
+                )
+                .collect(Collectors.toList());
+        this.reloadTable();
+    }//GEN-LAST:event_jButtonCariActionPerformed
+
+    private void jTextFieldNomorKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldNomorKeyTyped
+        var utils = new Utilities(this, false);
+
+        if (utils.validasiInputHanyaAngka(evt)) {
+        } else if (jTextFieldNomor.getText().length() > 12 && evt.getKeyCode() != KeyEvent.VK_BACK_SPACE) {
+            utils.showErrorDialog("panjang nomor tidak boleh lebih dari 13!");
+            evt.consume();
+        }
+    }//GEN-LAST:event_jTextFieldNomorKeyTyped
+
+    private void jTextFieldNomorFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTextFieldNomorFocusLost
+        var nomor = jTextFieldNomor.getText();
+        if (!nomor.isEmpty() && nomor.length() < 10) {
+            new Utilities(this).showErrorDialog("panjang nomor terlalu pendek!");
+            jTextFieldNomor.requestFocusInWindow();
+        }
+    }//GEN-LAST:event_jTextFieldNomorFocusLost
+
+    private void jMenuItemEksporActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEksporActionPerformed
+        var chooser = new JFileChooser();
+        chooser.setAcceptAllFileFilterUsed(false);
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV files", "csv"));
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            FileWriter writer = null;
+            try {
+                var file = chooser.getSelectedFile();
+                var path = file.getPath();
+                if (!path.endsWith(".csv")) {
+                    path += ".csv";
+                }
+
+                writer = new FileWriter(path);
+                writer.write("id,nomor,nama,kategori\n");
+                var data = Kontak.getAll(this.conn);
+                for (var kontak : data) {
+                    writer.write(String.join(",",
+                            new String[]{
+                                String.valueOf(kontak.id),
+                                kontak.nomor,
+                                kontak.nama,
+                                kontak.kategori
+                            }
+                    ));
+                    writer.write('\n');
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }//GEN-LAST:event_jMenuItemEksporActionPerformed
+
+    private void jMenuItemImporActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemImporActionPerformed
+        var chooser = new JFileChooser();
+        chooser.setAcceptAllFileFilterUsed(false);
+        chooser.setMultiSelectionEnabled(false);
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV files", "csv"));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try {
+                var data = new ArrayList<Kontak>();
+
+                var file = chooser.getSelectedFile();
+                var lines = Files.lines(file.toPath()).iterator();
+                lines.next(); // skip header
+                while (lines.hasNext()) {
+                    var line = lines.next();
+                    var split = line.split(",");
+                    data.add(new Kontak(
+                            Integer.valueOf(split[0]),
+                            split[1], split[2], split[3]
+                    ));
+                }
+
+                for (var kontak : data) {
+                    if (Kontak.cekSudahAda(conn, kontak)) {
+                        kontak.update(conn);
+                    } else {
+                        kontak.insert(conn);
+                    }
+                }
+
+                this.reset();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_jMenuItemImporActionPerformed
+
+    void reset() {
         jButtonTambah.setEnabled(true);
         jButtonEdit.setEnabled(false);
         jButtonHapus.setEnabled(false);
 
+        this.reloadData();
         this.reloadTable();
         Utilities.clearInput(new Object[]{
             jTextFieldID, jTextFieldNomor, jTextFieldNama, jComboBoxKategori
@@ -315,20 +477,22 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     }
 
     void reloadTable() {
-        var filter = (String) jComboBoxFilterKategori.getSelectedItem();
-        this.daftarKontak = Kontak.getAll(conn)
-                .stream()
-                .filter(
-                        kontak -> filter == null
-                        || filter.equals("Semua")
-                        || filter.equals(kontak.kategori))
-                .collect(Collectors.toList());
-
         var model = (DefaultTableModel) this.jTable1.getModel();
         model.setRowCount(0);
         for (var kontak : this.daftarKontak) {
             model.addRow(new String[]{kontak.nomor, kontak.nama, kontak.kategori});
         }
+    }
+
+    void reloadData() {
+        var filterKategori = (String) jComboBoxFilterKategori.getSelectedItem();
+        this.daftarKontak = Kontak.getAll(conn)
+                .stream()
+                .filter(
+                        kontak -> filterKategori == null
+                        || filterKategori.equals("Semua")
+                        || filterKategori.equals(kontak.kategori))
+                .collect(Collectors.toList());
     }
 
     Optional<Kontak> getKontakFromInput() {
@@ -396,6 +560,11 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JList<String> jListKontak;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JMenuItem jMenuItemEkspor;
+    private javax.swing.JMenuItem jMenuItemImpor;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
