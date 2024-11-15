@@ -6,7 +6,6 @@
 import java.awt.event.KeyEvent;
 import java.io.FileWriter;
 import java.nio.file.Files;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,20 +19,22 @@ import javax.swing.table.DefaultTableModel;
  * @author x
  */
 public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
-
-    private Connection conn;
+    
     private List<Kontak> daftarKontak = new ArrayList<>();
-
+    private Utilities utils;
+    
     /**
      * Creates new form JFrameAplikasiPengelolaKontak
      */
     public JFrameAplikasiPengelolaKontak() {
         initComponents();
-
+        
+        this.utils = new Utilities(this);
         this.setLocationRelativeTo(null);
-        this.conn = SQLiteDatabase.connect();
-        this.reloadData();
-        this.reloadTable();
+        
+        Kontak.conn = SQLiteDatabase.connect();
+        this.updateData();
+        this.updateTable();
     }
 
     /**
@@ -299,11 +300,10 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         }
 
         var kontak = kontakOptional.get();
-        if (Kontak.cekSudahAda(conn, kontak)) {
-            new Utilities(this)
-                    .showErrorDialog("kontak dengan nomor %s sudah ada!".formatted(kontak.nomor));
+        if (kontak.exists()) {
+            utils.showErrorDialog("kontak dengan nomor %s sudah ada!".formatted(kontak.nomor));
         } else {
-            kontak.insert(conn);
+            kontak.insert();
         }
 
         this.reset();
@@ -314,8 +314,9 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         if (kontakOptional.isEmpty()) {
             return;
         }
-
-        kontakOptional.get().delete(conn);
+        
+        var kontak = kontakOptional.get();
+        kontak.delete();
         this.reset();
     }//GEN-LAST:event_jButtonHapusActionPerformed
 
@@ -325,7 +326,8 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
             return;
         }
 
-        kontakOptional.get().update(conn);
+        var kontak = kontakOptional.get();
+        kontak.update();
         this.reset();
     }//GEN-LAST:event_jButtonEditActionPerformed
 
@@ -347,7 +349,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     }//GEN-LAST:event_jTable1MouseClicked
 
     private void jComboBoxFilterKategoriItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jComboBoxFilterKategoriItemStateChanged
-        this.reloadTable();
+        this.updateTable();
     }//GEN-LAST:event_jComboBoxFilterKategoriItemStateChanged
 
     private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
@@ -360,7 +362,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
             return;
         }
 
-        this.reloadData();
+        this.updateData();
         this.daftarKontak = this.daftarKontak
                 .stream()
                 .filter(
@@ -368,14 +370,12 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
                         || kontak.nama.contains(search)
                 )
                 .collect(Collectors.toList());
-        this.reloadTable();
+        this.updateTable();
     }//GEN-LAST:event_jButtonCariActionPerformed
 
     private void jTextFieldNomorKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextFieldNomorKeyTyped
-        var utils = new Utilities(this, false);
-
         if (utils.validasiInputHanyaAngka(evt)) {
-        } else if (jTextFieldNomor.getText().length() > 12 && evt.getKeyCode() != KeyEvent.VK_BACK_SPACE) {
+        } else if (jTextFieldNomor.getText().length() == 13 && evt.getKeyCode() != KeyEvent.VK_BACK_SPACE) {
             utils.showErrorDialog("panjang nomor tidak boleh lebih dari 13!");
             evt.consume();
         }
@@ -384,7 +384,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     private void jTextFieldNomorFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTextFieldNomorFocusLost
         var nomor = jTextFieldNomor.getText();
         if (!nomor.isEmpty() && nomor.length() < 10) {
-            new Utilities(this).showErrorDialog("panjang nomor terlalu pendek!");
+            utils.showErrorDialog("panjang nomor terlalu pendek!");
             jTextFieldNomor.requestFocusInWindow();
         }
     }//GEN-LAST:event_jTextFieldNomorFocusLost
@@ -404,7 +404,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
 
                 writer = new FileWriter(path);
                 writer.write("id,nomor,nama,kategori\n");
-                var data = Kontak.getAll(this.conn);
+                var data = Kontak.getAll();
                 for (var kontak : data) {
                     writer.write(String.join(",",
                             new String[]{
@@ -450,10 +450,10 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
                 }
 
                 for (var kontak : data) {
-                    if (Kontak.cekSudahAda(conn, kontak)) {
-                        kontak.update(conn);
+                    if ((kontak.exists())) {
+                        kontak.update();
                     } else {
-                        kontak.insert(conn);
+                        kontak.insert();
                     }
                 }
 
@@ -469,14 +469,14 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         jButtonEdit.setEnabled(false);
         jButtonHapus.setEnabled(false);
 
-        this.reloadData();
-        this.reloadTable();
-        Utilities.clearInput(new Object[]{
+        this.updateData();
+        this.updateTable();
+        utils.clearInput(new Object[]{
             jTextFieldID, jTextFieldNomor, jTextFieldNama, jComboBoxKategori
         });
     }
 
-    void reloadTable() {
+    void updateTable() {
         var model = (DefaultTableModel) this.jTable1.getModel();
         model.setRowCount(0);
         for (var kontak : this.daftarKontak) {
@@ -484,9 +484,9 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         }
     }
 
-    void reloadData() {
+    void updateData() {
         var filterKategori = (String) jComboBoxFilterKategori.getSelectedItem();
-        this.daftarKontak = Kontak.getAll(conn)
+        this.daftarKontak = Kontak.getAll()
                 .stream()
                 .filter(
                         kontak -> filterKategori == null
@@ -496,7 +496,6 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     }
 
     Optional<Kontak> getKontakFromInput() {
-        var utils = new Utilities(this, false);
         if (utils.validasiTidakKosong(jTextFieldNomor, "nomor")
                 || utils.validasiTidakKosong(jTextFieldNama, "nama")
                 || utils.validasiTidakNull(jComboBoxKategori, "kategori kontak")) {

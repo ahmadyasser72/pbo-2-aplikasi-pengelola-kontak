@@ -6,22 +6,18 @@
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  *
  * @author x
  */
 public class Kontak {
+    static Connection conn;
 
     Integer id;
     String nomor;
     String nama;
     String kategori;
-
-    public Kontak(String nomor, String nama, String kategori) {
-        this(null, nomor, nama, kategori);
-    }
 
     public Kontak(Integer id, String nomor, String nama, String kategori) {
         this.id = id;
@@ -30,8 +26,8 @@ public class Kontak {
         this.kategori = kategori;
     }
 
-    public void insert(Connection conn) {
-        Kontak.createTable(conn);
+    public void insert() {
+        Kontak.createTableIfNotExists();
 
         try (var stmt = conn.createStatement()) {
             String insertSQL = "INSERT INTO kontak"
@@ -43,8 +39,8 @@ public class Kontak {
         }
     }
 
-    public void update(Connection conn) {
-        Kontak.createTable(conn);
+    public void update() {
+        Kontak.createTableIfNotExists();
 
         try (var stmt = conn.createStatement()) {
             String updateSQL = "UPDATE kontak"
@@ -58,8 +54,8 @@ public class Kontak {
         }
     }
 
-    public void delete(Connection conn) {
-        Kontak.createTable(conn);
+    public void delete() {
+        Kontak.createTableIfNotExists();
 
         try (var stmt = conn.createStatement()) {
             String deleteSQL = "DELETE FROM kontak"
@@ -70,7 +66,7 @@ public class Kontak {
         }
     }
 
-    public static void createTable(Connection conn) {
+    public static void createTableIfNotExists() {
         try (var stmt = conn.createStatement()) {
 
             // Membuat tabel jika belum ada
@@ -86,10 +82,10 @@ public class Kontak {
         }
     }
 
-    public static boolean cekSudahAda(Connection conn, Kontak cek) {
-        var semua = Kontak.getAll(conn);
+    public boolean exists() {
+        var semua = Kontak.getAll();
         for (var kontak : semua) {
-            if (kontak.nomor.equals(cek.nomor)) {
+            if (kontak.nomor.equals(this.nomor)) {
                 return true;
             }
         }
@@ -97,21 +93,12 @@ public class Kontak {
         return false;
     }
 
-    public static List<Kontak> getAll(Connection conn) {
-        return Kontak.getAll(conn, Optional.empty());
-    }
-
-    public static List<Kontak> getAll(Connection conn, Optional<String> filter) {
-        Kontak.createTable(conn);
+    public static List<Kontak> getAll() {
+        Kontak.createTableIfNotExists();
 
         List<Kontak> data = new ArrayList<>();
         try (var stmt = conn.createStatement()) {
-            var query = "SELECT * FROM kontak";
-            if (filter.isPresent()) {
-                query += " WHERE " + filter.get();
-            }
-            
-            var rs = stmt.executeQuery(query);
+            var rs = stmt.executeQuery("SELECT * FROM kontak");
 
             while (rs.next()) {
                 data.add(new Kontak(
