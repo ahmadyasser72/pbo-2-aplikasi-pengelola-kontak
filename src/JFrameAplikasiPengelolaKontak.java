@@ -19,19 +19,19 @@ import javax.swing.table.DefaultTableModel;
  * @author x
  */
 public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
-    
+
     private List<Kontak> daftarKontak = new ArrayList<>();
     private Utilities utils;
-    
+
     /**
      * Creates new form JFrameAplikasiPengelolaKontak
      */
     public JFrameAplikasiPengelolaKontak() {
         initComponents();
-        
+
         this.utils = new Utilities(this);
         this.setLocationRelativeTo(null);
-        
+
         Kontak.conn = SQLiteDatabase.connect();
         this.updateData();
         this.updateTable();
@@ -314,7 +314,7 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
         if (kontakOptional.isEmpty()) {
             return;
         }
-        
+
         var kontak = kontakOptional.get();
         kontak.delete();
         this.reset();
@@ -477,22 +477,20 @@ public final class JFrameAplikasiPengelolaKontak extends javax.swing.JFrame {
     }
 
     void updateTable() {
+        var filterKategori = (String) jComboBoxFilterKategori.getSelectedItem();
         var model = (DefaultTableModel) this.jTable1.getModel();
         model.setRowCount(0);
         for (var kontak : this.daftarKontak) {
-            model.addRow(new String[]{kontak.nomor, kontak.nama, kontak.kategori});
+            if (filterKategori == null
+                    || filterKategori.equals("Semua")
+                    || filterKategori.equals(kontak.kategori)) {
+                model.addRow(new String[]{kontak.nomor, kontak.nama, kontak.kategori});
+            }
         }
     }
 
     void updateData() {
-        var filterKategori = (String) jComboBoxFilterKategori.getSelectedItem();
-        this.daftarKontak = Kontak.getAll()
-                .stream()
-                .filter(
-                        kontak -> filterKategori == null
-                        || filterKategori.equals("Semua")
-                        || filterKategori.equals(kontak.kategori))
-                .collect(Collectors.toList());
+        this.daftarKontak = Kontak.getAll();
     }
 
     Optional<Kontak> getKontakFromInput() {
