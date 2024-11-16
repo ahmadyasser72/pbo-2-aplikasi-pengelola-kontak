@@ -81,18 +81,30 @@ public class Utilities {
             JOptionPane.showMessageDialog(parent, pesan, "error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
+    public void showErrorDialog(Exception e, String nama) {
+        this.showErrorDialog("gagal %s! %s".formatted(nama, e.getMessage()));
+    }
+
     public void showInformationDialog(String pesan) {
         if (!this.silent) {
             JOptionPane.showMessageDialog(parent, pesan, "info", JOptionPane.INFORMATION_MESSAGE);
         }
     }
-    
+
     public String showInputDialog(String pesan) {
         if (!this.silent) {
             return JOptionPane.showInputDialog(parent, pesan);
         }
-        
+
         return "";
+    }
+
+    public boolean showConfirmDialog(String pesan) {
+        if (!this.silent) {
+            return JOptionPane.showConfirmDialog(parent, pesan, "confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+        }
+
+        return true;
     }
 }
